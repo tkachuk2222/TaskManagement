@@ -14,9 +14,26 @@ public class RedisCacheService : ICacheService
 
     public RedisCacheService(IOptions<RedisSettings> settings)
     {
-        _redis = ConnectionMultiplexer.Connect(settings.Value.ConnectionString);
-        _database = _redis.GetDatabase();
-        _defaultExpiration = TimeSpan.FromMinutes(settings.Value.DefaultExpirationMinutes);
+        var connectionString = settings.Value.ConnectionString;
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "Redis connection string is not configured. " +
+                "Please set the Redis__ConnectionString environment variable or add Redis service to Railway.");
+        }
+
+        try
+        {
+            _redis = ConnectionMultiplexer.Connect(connectionString);
+            _database = _redis.GetDatabase();
+            _defaultExpiration = TimeSpan.FromMinutes(settings.Value.DefaultExpirationMinutes);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to connect to Redis at '{connectionString}'. " +
+                "Please verify the connection string and ensure Redis service is running.", ex);
+        }
     }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class

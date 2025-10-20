@@ -16,24 +16,8 @@ public class UserSessionRepository : IUserSessionRepository
         var database = client.GetDatabase(settings.Value.DatabaseName);
         _sessions = database.GetCollection<UserSession>("userSessions");
         
-        // Create indexes
-        CreateIndexes();
-    }
-
-    private void CreateIndexes()
-    {
-        // Index for finding sessions by refresh token
-        var refreshTokenIndex = Builders<UserSession>.IndexKeys.Ascending(s => s.RefreshToken);
-        _sessions.Indexes.CreateOne(new CreateIndexModel<UserSession>(refreshTokenIndex));
-
-        // Index for finding sessions by user ID
-        var userIdIndex = Builders<UserSession>.IndexKeys.Ascending(s => s.UserId);
-        _sessions.Indexes.CreateOne(new CreateIndexModel<UserSession>(userIdIndex));
-
-        // TTL index for automatic cleanup of expired sessions
-        var expirationIndex = Builders<UserSession>.IndexKeys.Ascending(s => s.ExpiresAt);
-        var expirationOptions = new CreateIndexOptions { ExpireAfter = TimeSpan.Zero };
-        _sessions.Indexes.CreateOne(new CreateIndexModel<UserSession>(expirationIndex, expirationOptions));
+        // Note: Index creation moved to DatabaseInitializationHostedService
+        // to avoid creating indexes on every request (repository is scoped)
     }
 
     public async Task<UserSession> CreateSessionAsync(UserSession session, CancellationToken cancellationToken = default)

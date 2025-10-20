@@ -49,73 +49,95 @@ public class Migration_1_0_0_InitialIndexes : IMigration
 
     private async Task CreateProjectIndexesAsync(CancellationToken cancellationToken)
     {
-        var collection = _database.GetCollection<Project>(_settings.ProjectsCollection);
-        
-        // Compound index for common queries
-        var indexKeys1 = Builders<Project>.IndexKeys
-            .Ascending(p => p.OwnerId)
-            .Ascending(p => p.Status)
-            .Ascending(p => p.IsDeleted);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<Project>(indexKeys1, new CreateIndexOptions { Name = "idx_owner_status_deleted" }),
-            cancellationToken: cancellationToken);
+        try
+        {
+            var collection = _database.GetCollection<Project>(_settings.ProjectsCollection);
 
-        // Text search index
-        var indexKeys2 = Builders<Project>.IndexKeys.Text(p => p.Name).Text(p => p.Description);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<Project>(indexKeys2, new CreateIndexOptions { Name = "idx_text_search" }),
-            cancellationToken: cancellationToken);
+            // Compound index for common queries
+            var indexKeys1 = Builders<Project>.IndexKeys
+                .Ascending(p => p.OwnerId)
+                .Ascending(p => p.Status)
+                .Ascending(p => p.IsDeleted);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<Project>(indexKeys1, new CreateIndexOptions { Name = "idx_owner_status_deleted" }),
+                cancellationToken: cancellationToken);
 
-        // CreatedAt index
-        var indexKeys3 = Builders<Project>.IndexKeys.Descending(p => p.CreatedAt);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<Project>(indexKeys3, new CreateIndexOptions { Name = "idx_created_at" }),
-            cancellationToken: cancellationToken);
+            // Text search index
+            var indexKeys2 = Builders<Project>.IndexKeys.Text(p => p.Name).Text(p => p.Description);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<Project>(indexKeys2, new CreateIndexOptions { Name = "idx_text_search" }),
+                cancellationToken: cancellationToken);
 
-        // UpdatedAt index
-        var indexKeys4 = Builders<Project>.IndexKeys.Descending(p => p.UpdatedAt);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<Project>(indexKeys4, new CreateIndexOptions { Name = "idx_updated_at" }),
-            cancellationToken: cancellationToken);
+            // CreatedAt index
+            var indexKeys3 = Builders<Project>.IndexKeys.Descending(p => p.CreatedAt);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<Project>(indexKeys3, new CreateIndexOptions { Name = "idx_created_at" }),
+                cancellationToken: cancellationToken);
+
+            // UpdatedAt index
+            var indexKeys4 = Builders<Project>.IndexKeys.Descending(p => p.UpdatedAt);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<Project>(indexKeys4, new CreateIndexOptions { Name = "idx_updated_at" }),
+                cancellationToken: cancellationToken);
+        }
+        catch (MongoCommandException ex) when (ex.Message != null && ex.Message.Contains("disk space"))
+        {
+            _logger.LogWarning("Insufficient disk space to create project indexes. The application will continue without these indexes (queries may be slower).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create project indexes. The application will continue without these indexes (queries may be slower).");
+        }
     }
 
     private async Task CreateTaskIndexesAsync(CancellationToken cancellationToken)
     {
-        var collection = _database.GetCollection<ProjectTask>(_settings.TasksCollection);
-        
-        // Project + Status + IsDeleted compound index
-        var indexKeys1 = Builders<ProjectTask>.IndexKeys
-            .Ascending(t => t.ProjectId)
-            .Ascending(t => t.Status)
-            .Ascending(t => t.IsDeleted);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<ProjectTask>(indexKeys1, new CreateIndexOptions { Name = "idx_project_status_deleted" }),
-            cancellationToken: cancellationToken);
+        try
+        {
+            var collection = _database.GetCollection<ProjectTask>(_settings.TasksCollection);
 
-        // Other indexes...
-        var indexKeys2 = Builders<ProjectTask>.IndexKeys.Ascending(t => t.AssignedToId);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<ProjectTask>(indexKeys2, new CreateIndexOptions { Name = "idx_assigned_to" }),
-            cancellationToken: cancellationToken);
+            // Project + Status + IsDeleted compound index
+            var indexKeys1 = Builders<ProjectTask>.IndexKeys
+                .Ascending(t => t.ProjectId)
+                .Ascending(t => t.Status)
+                .Ascending(t => t.IsDeleted);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<ProjectTask>(indexKeys1, new CreateIndexOptions { Name = "idx_project_status_deleted" }),
+                cancellationToken: cancellationToken);
 
-        var indexKeys3 = Builders<ProjectTask>.IndexKeys.Ascending(t => t.CreatedById);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<ProjectTask>(indexKeys3, new CreateIndexOptions { Name = "idx_created_by" }),
-            cancellationToken: cancellationToken);
+            // Other indexes...
+            var indexKeys2 = Builders<ProjectTask>.IndexKeys.Ascending(t => t.AssignedToId);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<ProjectTask>(indexKeys2, new CreateIndexOptions { Name = "idx_assigned_to" }),
+                cancellationToken: cancellationToken);
 
-        var indexKeys4 = Builders<ProjectTask>.IndexKeys.Descending(t => t.Priority);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<ProjectTask>(indexKeys4, new CreateIndexOptions { Name = "idx_priority" }),
-            cancellationToken: cancellationToken);
+            var indexKeys3 = Builders<ProjectTask>.IndexKeys.Ascending(t => t.CreatedById);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<ProjectTask>(indexKeys3, new CreateIndexOptions { Name = "idx_created_by" }),
+                cancellationToken: cancellationToken);
 
-        var indexKeys5 = Builders<ProjectTask>.IndexKeys.Ascending(t => t.DueDate);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<ProjectTask>(indexKeys5, new CreateIndexOptions { Name = "idx_due_date" }),
-            cancellationToken: cancellationToken);
+            var indexKeys4 = Builders<ProjectTask>.IndexKeys.Descending(t => t.Priority);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<ProjectTask>(indexKeys4, new CreateIndexOptions { Name = "idx_priority" }),
+                cancellationToken: cancellationToken);
 
-        var indexKeys6 = Builders<ProjectTask>.IndexKeys.Descending(t => t.CreatedAt);
-        await collection.Indexes.CreateOneAsync(
-            new CreateIndexModel<ProjectTask>(indexKeys6, new CreateIndexOptions { Name = "idx_task_created_at" }),
-            cancellationToken: cancellationToken);
+            var indexKeys5 = Builders<ProjectTask>.IndexKeys.Ascending(t => t.DueDate);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<ProjectTask>(indexKeys5, new CreateIndexOptions { Name = "idx_due_date" }),
+                cancellationToken: cancellationToken);
+
+            var indexKeys6 = Builders<ProjectTask>.IndexKeys.Descending(t => t.CreatedAt);
+            await collection.Indexes.CreateOneAsync(
+                new CreateIndexModel<ProjectTask>(indexKeys6, new CreateIndexOptions { Name = "idx_task_created_at" }),
+                cancellationToken: cancellationToken);
+        }
+        catch (MongoCommandException ex) when (ex.Message != null && ex.Message.Contains("disk space"))
+        {
+            _logger.LogWarning("Insufficient disk space to create task indexes. The application will continue without these indexes (queries may be slower).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create task indexes. The application will continue without these indexes (queries may be slower).");
+        }
     }
 }
