@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: taskmanagement-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: taskmanagement
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/taskmanagement --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - taskmanagement-network
+
+  redis:
+    image: redis:alpine
+    container_name: taskmanagement-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - taskmanagement-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: taskmanagement-jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC receiver
+      - "4318:4318"    # OTLP HTTP receiver
+      - "14250:14250"  # Jaeger gRPC
+      - "14268:14268"  # Jaeger HTTP
+      - "9411:9411"    # Zipkin compatible endpoint
+    networks:
+      - taskmanagement-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskmanagement-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - MongoDb__ConnectionString=mongodb://mongodb:27017
+      - MongoDb__DatabaseName=taskmanagement
+      - Redis__ConnectionString=redis:6379
+      - Supabase__Url=${SUPABASE_URL}
+      - Supabase__AnonKey=${SUPABASE_ANON_KEY}
+      - Supabase__JwtSecret=${SUPABASE_JWT_SECRET}
+      - OpenTelemetry__ServiceName=TaskManagement.API
+      - OpenTelemetry__ServiceVersion=1.0.0
+      - OpenTelemetry__UseConsoleExporter=false
+      - OpenTelemetry__OtlpEndpoint=http://jaeger:4317
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - taskmanagement-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  taskmanagement-network:
+    driver: bridge
