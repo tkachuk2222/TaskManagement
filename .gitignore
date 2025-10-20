@@ -32,10 +32,12 @@ project.fragment.lock.json
 artifacts/
 
 # Environment files
-# .env
+# Ignore all .env files EXCEPT .env.example
+.env
 .env.local
 .env.production
-*.env
+.env.*
+!.env.example
 
 # User Secrets (should already be ignored, but explicit is better)
 **/secrets.json

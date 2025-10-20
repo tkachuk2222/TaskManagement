@@ -53,30 +53,42 @@ For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### For Reviewers - Quick Start (30 Seconds)
 
-**Everything is configured!** Just start Docker:
+**Everything is configured!** Just run the setup script:
 
 ```bash
 # 1. Clone repository
 git clone <your-repo-url>
 cd test-task
 
-# 2. Copy environment file (already has working Supabase credentials)
-# Linux/macOS
-cp .env.example .env
-
+# 2. Run setup script (creates .env and starts Docker)
 # Windows PowerShell
-Copy-Item .env.example .env
+.\setup.ps1
 
-# 3. Start everything with Docker Compose
-docker-compose up -d
-
-# 4. Wait 30-40 seconds for services to be healthy
-# ✅ API ready at http://localhost:5000
-# ✅ Swagger UI at http://localhost:5000/swagger
-# ✅ Jaeger UI at http://localhost:16686
+# Linux/macOS
+chmod +x setup.sh
+./setup.sh
 ```
 
-**That's it!** The API, MongoDB, Redis, and Jaeger all start automatically.
+**That's it!** The script will:
+- ✅ Create `.env` file from `.env.example` (with working Supabase credentials)
+- ✅ Start MongoDB, Redis, Jaeger, and API with Docker Compose
+- ✅ Wait for services to be healthy
+- ✅ Open http://localhost:5000/swagger in your browser
+
+**Manual Setup (if you prefer):**
+```bash
+# Copy environment file
+cp .env.example .env  # Linux/macOS
+Copy-Item .env.example .env  # Windows
+
+# Start services
+docker-compose up -d
+
+# Wait 30-40 seconds, then access:
+# • API: http://localhost:5000
+# • Swagger UI: http://localhost:5000/swagger
+# • Jaeger UI: http://localhost:16686
+```
 
 ### What Gets Started
 
