@@ -1,0 +1,520 @@
+{
+"info": {
+"_postman_id": "task-management-api",
+"name": "Task Management API",
+"description": "Complete API collection for Task Management System with authentication, CRUD operations, and advanced features.\n\n## Features\n- JWT Authentication with auto-token management\n- Pre-request scripts for authentication\n- Test scripts for all endpoints\n- Sample data for testing\n\n## Setup\n1. Import this collection\n2. Import environment file (Local or Production)\n3. Run Register User and Login\n4. Auth token is automatically saved\n\n## Status Codes\n- 200 OK, 201 Created, 204 No Content\n- 400 Bad Request, 401 Unauthorized, 404 Not Found\n- 412 Precondition Failed (ETag mismatch)\n- 429 Too Many Requests (Rate limit)",
+"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+},
+"item": [
+{
+"name": "Authentication",
+"item": [
+{
+"name": "Register User",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const json = pm.response.json();",
+"    pm.environment.set(\"auth_token\", json.accessToken);",
+"    pm.environment.set(\"refresh_token\", json.refreshToken);",
+"    pm.environment.set(\"user_id\", json.userId);",
+"    console.log(\"✅ Auth token saved from registration!\");",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"method": "POST",
+"header": [{"key": "Content-Type", "value": "application/json"}],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"password\": \"{{test_user_password}}\",\n  \"fullName\": \"{{test_user_name}}\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/auth/register",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "auth", "register"]
+}
+}
+},
+{
+"name": "Login User",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const json = pm.response.json();",
+"    pm.environment.set(\"auth_token\", json.accessToken);",
+"    pm.environment.set(\"refresh_token\", json.refreshToken);",
+"    pm.environment.set(\"user_id\", json.userId);",
+"    console.log(\"✅ Auth token saved!\");",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"method": "POST",
+"header": [{"key": "Content-Type", "value": "application/json"}],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"password\": \"{{test_user_password}}\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/auth/login",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "auth", "login"]
+}
+}
+},
+{
+"name": "Get Profile",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/api/v1/auth/me",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "auth", "me"]
+}
+}
+}
+]
+},
+{
+"name": "Projects",
+"item": [
+{
+"name": "Create Project",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 201\", () => pm.response.to.have.status(201));",
+"if (pm.response.code === 201) {",
+"    pm.environment.set(\"project_id\", pm.response.json().id);",
+"    const etag = pm.response.headers.get(\"ETag\");",
+"    if (etag) pm.environment.set(\"project_etag\", etag);",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "POST",
+"header": [{"key": "Content-Type", "value": "application/json"}],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"name\": \"API Development\",\n  \"description\": \"Build Task Management API\",\n  \"status\": 1,\n  \"tags\": [\"backend\", \"api\"]\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/projects",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects"]
+}
+}
+},
+{
+"name": "Get All Projects",
+"event": [{
+"listen": "test",
+"script": {
+"exec": ["pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));"],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/api/v1/projects?pageNumber=1&pageSize=20",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects"],
+"query": [{"key": "pageNumber", "value": "1"}, {"key": "pageSize", "value": "20"}]
+}
+}
+},
+{
+"name": "Get Project by ID",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"const etag = pm.response.headers.get(\"ETag\");",
+"if (etag) pm.environment.set(\"project_etag\", etag);"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}"]
+}
+}
+},
+{
+"name": "Update Project",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"const etag = pm.response.headers.get(\"ETag\");",
+"if (etag) pm.environment.set(\"project_etag\", etag);"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "PUT",
+"header": [
+{"key": "Content-Type", "value": "application/json"},
+{"key": "If-Match", "value": "{{project_etag}}"}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"name\": \"API Development (Updated)\",\n  \"description\": \"Updated description\",\n  \"status\": 2\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}"]
+}
+}
+},
+{
+"name": "Delete Project",
+"event": [{
+"listen": "test",
+"script": {
+"exec": ["pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "DELETE",
+"header": [{"key": "If-Match", "value": "{{project_etag}}"}],
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}"]
+}
+}
+},
+{
+"name": "Get Project Analytics",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const json = pm.response.json();",
+"    pm.test(\"Has project analytics\", () => {",
+"        pm.expect(json).to.have.property('projectId');",
+"        pm.expect(json).to.have.property('totalTasks');",
+"        pm.expect(json).to.have.property('completedTasks');",
+"        pm.expect(json).to.have.property('completionPercentage');",
+"    });",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}/analytics",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}", "analytics"]
+}
+}
+}
+]
+},
+{
+"name": "Tasks",
+"item": [
+{
+"name": "Create Task",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const json = pm.response.json();",
+"    pm.environment.set(\"task_id\", json.id);",
+"    console.log(\"✅ Task ID saved: \" + json.id);",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "POST",
+"header": [{"key": "Content-Type", "value": "application/json"}],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"title\": \"Implement Authentication\",\n  \"description\": \"Set up JWT auth\",\n  \"status\": 0,\n  \"priority\": 3,\n  \"estimatedHours\": 16,\n  \"tags\": [\"backend\", \"security\"]\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}", "tasks"]
+}
+}
+},
+{
+"name": "Get All Tasks",
+"event": [{
+"listen": "test",
+"script": {
+"exec": ["pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));"],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks?pageNumber=1&pageSize=20",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}", "tasks"],
+"query": [{"key": "pageNumber", "value": "1"}, {"key": "pageSize", "value": "20"}]
+}
+}
+},
+{
+"name": "Get Task by ID",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const etag = pm.response.headers.get(\"ETag\");",
+"    if (etag) {",
+"        pm.environment.set(\"task_etag\", etag);",
+"        console.log(\"✅ Task ETag saved: \" + etag);",
+"    }",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks/{{task_id}}",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}", "tasks", "{{task_id}}"]
+}
+}
+},
+{
+"name": "Update Task",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const etag = pm.response.headers.get(\"ETag\");",
+"    if (etag) pm.environment.set(\"task_etag\", etag);",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "PUT",
+"header": [
+{"key": "Content-Type", "value": "application/json"},
+{"key": "If-Match", "value": "{{task_etag}}"}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"title\": \"Updated Task\",\n  \"status\": 1,\n  \"priority\": 3\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks/{{task_id}}",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}", "tasks", "{{task_id}}"]
+}
+}
+},
+{
+"name": "Update Task Status",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const etag = pm.response.headers.get(\"ETag\");",
+"    if (etag) pm.environment.set(\"task_etag\", etag);",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "PATCH",
+"header": [
+{"key": "Content-Type", "value": "application/json"},
+{"key": "If-Match", "value": "{{task_etag}}"}
+],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"status\": 3\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/status",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "tasks", "{{task_id}}", "status"]
+}
+}
+},
+{
+"name": "Assign Task",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"if (pm.response.code === 200) {",
+"    const json = pm.response.json();",
+"    pm.test(\"Task is assigned\", () => {",
+"        pm.expect(json).to.have.property('assignedToId');",
+"    });",
+"    console.log(\"✅ Task assigned to: \" + json.assignedToId);",
+"}"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "POST",
+"header": [{"key": "Content-Type", "value": "application/json"}],
+"body": {
+"mode": "raw",
+"raw": "{\n  \"userId\": \"{{user_id}}\"\n}"
+},
+"url": {
+"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/assign",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "tasks", "{{task_id}}", "assign"]
+}
+}
+},
+{
+"name": "Delete Task",
+"event": [{
+"listen": "test",
+"script": {
+"exec": ["pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"],
+"type": "text/javascript"
+}
+}],
+"request": {
+"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}"}]},
+"method": "DELETE",
+"url": {
+"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks/{{task_id}}",
+"host": ["{{base_url}}"],
+"path": ["api", "v1", "projects", "{{project_id}}", "tasks", "{{task_id}}"]
+}
+}
+}
+]
+},
+{
+"name": "Health",
+"item": [
+{
+"name": "Health Check",
+"event": [{
+"listen": "test",
+"script": {
+"exec": [
+"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+"pm.test(\"Response time < 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+],
+"type": "text/javascript"
+}
+}],
+"request": {
+"method": "GET",
+"url": {
+"raw": "{{base_url}}/health",
+"host": ["{{base_url}}"],
+"path": ["health"]
+}
+}
+}
+]
+}
+],
+"event": [
+{
+"listen": "prerequest",
+"script": {
+"type": "text/javascript",
+"exec": [
+"const token = pm.environment.get('auth_token');",
+"const url = pm.request.url.toString();",
+"const publicPaths = ['/auth/register', '/auth/login', '/health'];",
+"const isPublic = publicPaths.some(path => url.includes(path));",
+"if (!isPublic && !token) console.warn('⚠️  No auth token! Run Login first.');"
+]
+}
+},
+{
+"listen": "test",
+"script": {
+"type": "text/javascript",
+"exec": [
+"console.log('⏱️  ' + pm.response.responseTime + 'ms');",
+"if (pm.response.code === 429) console.error('❌ Rate limit exceeded!');",
+"if (pm.response.code === 401) console.error('❌ Unauthorized!');"
+]
+}
+}
+],
+"variable": [
+{"key": "base_url", "value": "http://localhost:5000"},
+{"key": "test_user_email", "value": "testuser@example.com"},
+{"key": "test_user_password", "value": "SecurePassword123!"},
+{"key": "test_user_name", "value": "Test User"}
+]
+}
