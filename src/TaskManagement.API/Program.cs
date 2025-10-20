@@ -307,3 +307,4 @@ finally
 {
     Log.CloseAndFlush();
 }
+
