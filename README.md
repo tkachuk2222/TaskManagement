@@ -10,6 +10,7 @@ This API provides a comprehensive task and project management system with:
 - Analytics and reporting with optimized queries
 - Advanced filtering, sorting, and pagination
 - Distributed caching with Redis
+- Rate limiting with multiple policies (default, authentication, strict)
 - Distributed tracing with OpenTelemetry and Jaeger
 - Structured logging with correlation IDs
 - Health checks and monitoring
@@ -29,6 +30,7 @@ This API provides a comprehensive task and project management system with:
 - **Serilog** - Structured logging with enrichers
 - **OpenTelemetry** - Distributed tracing and observability
 - **Swashbuckle** - OpenAPI/Swagger documentation
+- **Rate Limiting** - ASP.NET Core rate limiter with IP-based policies
 - **Health Checks** - MongoDB and Redis monitoring
 - **Repository Pattern** - Data access abstraction
 - **Result Pattern** - Type-safe error handling
@@ -340,11 +342,31 @@ The `/health` endpoint monitors:
 
 Returns JSON with status of each dependency.
 
+### Rate Limiting
+
+Built-in rate limiting protects the API from abuse with three policies:
+
+1. **Default Policy** (100 requests/minute per IP)
+   - Applied to all endpoints by default
+   - Queue up to 10 requests when limit reached
+
+2. **Authentication Policy** (10 requests/minute per IP)
+   - Applied to `/api/v1/auth/*` endpoints
+   - Prevents brute force attacks
+   - No queueing - immediate rejection
+
+3. **Strict Policy** (20 requests/minute per IP)
+   - Available for sensitive operations
+   - Queue up to 5 requests
+
+When rate limit is exceeded, returns `429 Too Many Requests` with `Retry-After` header.
+
 ## 🔐 Security Features
 
 - **JWT Authentication**: Supabase-based authentication with JWT Bearer tokens
 - **Session Management**: Multi-session support with device tracking and revocation
 - **Refresh Token Rotation**: Automatic token refresh with secure rotation
+- **Rate Limiting**: IP-based rate limiting with multiple policies (default, auth, strict)
 - **Input Validation**: FluentValidation on all requests via MediatR pipeline
 - **Optimistic Concurrency**: ETag-based validation for updates (HTTP 412)
 - **Soft Deletes**: Data retention with `IsDeleted` flag
@@ -352,23 +374,23 @@ Returns JSON with status of each dependency.
 - **Correlation IDs**: Request tracing for security audits
 - **CORS**: Configured (adjust for production origins)
 
-## 🚧 Known Limitations & Future Enhancements
+## 🚧 Scope & Extensibility
 
-### Current Limitations
-1. **Authentication**: Requires Supabase account (credentials provided in `.env.example`)
-2. **File Attachments**: Task attachments stored as string URLs (no blob storage)
-3. **User Profiles**: No extended user profile storage (Supabase only)
-4. **Rate Limiting**: Not implemented (recommended for production)
+### Current Scope
+This API provides a complete task management system with all core features implemented. It uses:
+- **Supabase** for authentication (free tier with pre-configured test credentials)
+- **MongoDB** for data persistence with optimized indexing
+- **Redis** for distributed caching
+- **String URLs** for attachment references (tasks can link to external resources)
 
-### Planned Enhancements
+### Potential Future Enhancements
+If extended beyond the current requirements, the architecture could support:
 1. **Real-time Updates**: SignalR/WebSocket for live task updates
 2. **Message Queue**: Event-driven architecture with RabbitMQ/Azure Service Bus
 3. **Event Sourcing**: Complete audit trail of all changes
-4. **File Storage**: Azure Blob Storage or S3 for attachments
-5. **API Versioning**: Multiple API versions support
-6. **Advanced Authorization**: Role-based access control (RBAC)
-7. **Full-text Search**: Elasticsearch integration
-8. **Notifications**: Email/Push notifications for task updates
+4. **Advanced Authorization**: Role-based access control (RBAC) with permissions
+5. **Full-text Search**: Elasticsearch integration for advanced search
+6. **Notifications**: Email/Push notifications for task updates
 
 ## 📈 Performance Considerations
 
