@@ -24,7 +24,9 @@ public class RedisCacheService : ICacheService
 
         try
         {
-            _redis = ConnectionMultiplexer.Connect(connectionString);
+            // Convert Railway Redis URL format (redis://user:password@host:port) to StackExchange.Redis format
+            var parsedConnectionString = ParseRedisConnectionString(connectionString);
+            _redis = ConnectionMultiplexer.Connect(parsedConnectionString);
             _database = _redis.GetDatabase();
             _defaultExpiration = TimeSpan.FromMinutes(settings.Value.DefaultExpirationMinutes);
         }
@@ -34,6 +36,24 @@ public class RedisCacheService : ICacheService
                 $"Failed to connect to Redis at '{connectionString}'. " +
                 "Please verify the connection string and ensure Redis service is running.", ex);
         }
+    }
+
+    private static string ParseRedisConnectionString(string connectionString)
+    {
+        // If it's already in StackExchange.Redis format (host:port), return as-is
+        if (!connectionString.StartsWith("redis://", StringComparison.OrdinalIgnoreCase))
+        {
+            return connectionString;
+        }
+
+        // Parse Railway/Heroku format: redis://user:password@host:port
+        var uri = new Uri(connectionString);
+        var host = uri.Host;
+        var port = uri.Port;
+        var password = uri.UserInfo.Split(':').Last();
+
+        // Build StackExchange.Redis connection string
+        return $"{host}:{port},password={password},ssl=false,abortConnect=false";
     }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
